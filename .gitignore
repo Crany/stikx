@@ -1,0 +1,8 @@
+# Folders
+bin/
+.vscode/
+node_modules/
+miscellaneous/
+
+# files
+.env
