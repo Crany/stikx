@@ -10,6 +10,8 @@ const ping: Command = {
             new EmbedBuilder().setDescription(`Ping! \`${client.ws.ping}ms\``)
             .setColor(0x52dc7e)
         ]});
+
+        // client.ws.ping gets the ping from the Web Socket connected to the Discord API
     },
 }
 

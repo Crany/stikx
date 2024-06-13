@@ -25,13 +25,13 @@ const validate = () => {
         level++;
     }
 
-    if (level == 0) return true
-    else            return false
+    if (level == 0) return true;
+    else            return false;
 }
 
 if (validate()) {
     console.log("> Successfully validated Enviroment Variables");
 
-    const client = new Client()
-    client.init()
+    const client = new Client();
+    client.init();
 }
