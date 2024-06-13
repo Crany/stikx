@@ -31,6 +31,7 @@ export default class ExtendedClient extends Client<true> {
         })
     }
 
+    private cooldownLength: number = 20000; // Cooldown length in milliseconds
     public commands: Map<string, Command> = new Map<string, Command>(); // Command_Name, Command
     private cooldown: Map<string, Date> = new Map<string, Date>(); // User_ID, date
     private clientId = Buffer.from(process.env.CLIENT_TOKEN!.split(".")[0], "base64").toString("utf8"); // Gets the client ID from the CLIENT_TOKEN
@@ -53,7 +54,7 @@ export default class ExtendedClient extends Client<true> {
         this.on(Events.InteractionCreate, async (interaction) => {
             if (!interaction.isChatInputCommand()) return
             else if (this.cooldown.get(interaction.user.id)) { // Checking if the user is on a cooldown
-                let Time = this.cooldown.get(interaction.user.id)!.getTime() + 20000;
+                let Time = this.cooldown.get(interaction.user.id)!.getTime() + this.cooldownLength;
                 let date = new Date(Time);
 
                 interaction.reply({ embeds: [
@@ -67,7 +68,7 @@ export default class ExtendedClient extends Client<true> {
             this.cooldown.set(interaction.user.id, new Date())
             setTimeout(() => {
                 this.cooldown.delete(interaction.user.id)
-            }, 20000) // 20 seconds
+            }, this.cooldownLength) // Cooldown length
 
             const command = this.commands.get(interaction.commandName);
 
