@@ -5,7 +5,7 @@
   "main": "bin/index.js",
   "scripts": {
     "build": "rm -rf ./bin/ && tsc --build",
-    "start": "node dotenv/config .",
+    "start": "node -r dotenv/config .",
     "dev": "ts-node -r dotenv/config src/index.ts",
     "dev:watch": "ts-node-dev -r dotenv/config src/index.ts",
     "clear": "node -r dotenv/config ./tasks/clearcommands.js"
