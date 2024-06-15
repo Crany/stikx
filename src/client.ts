@@ -1,14 +1,17 @@
+// actual Discord stuff
 import {
     Client, IntentsBitField, 
     Events, Routes, REST, time
 } from 'discord.js';
+import { EmbedBuilder } from '@discordjs/builders';
 
+// Types
 import { Command } from './types/Interactions';
 import { RegisterCommands } from './types/Client';
 
+// Other imports
 import fs from 'node:fs';
 import path from 'node:path';
-import { EmbedBuilder } from '@discordjs/builders';
 
 const GatewayIntentBits = IntentsBitField.Flags;
 
@@ -28,19 +31,20 @@ export default class ExtendedClient extends Client<true> {
         })
     }
 
+    private cooldownLength: number = 20000; // Cooldown length in milliseconds
     public commands: Map<string, Command> = new Map<string, Command>(); // Command_Name, Command
     private cooldown: Map<string, Date> = new Map<string, Date>(); // User_ID, date
-    private clientId = Buffer.from(process.env.CLIENT_TOKEN!.split(".")[0], "base64").toString("utf8");
+    private clientId = Buffer.from(process.env.CLIENT_TOKEN!.split(".")[0], "base64").toString("utf8"); // Gets the client ID from the CLIENT_TOKEN
 
     public init() {
         this.register({ clientId: this.clientId, guildId: process.env.GUILD_ID!, clientToken: process.env.CLIENT_TOKEN! }).then(() => { // Register Slash Commands
-            console.log("Connecting to the Client..."); // Blue
+            console.log("Connecting to the Client...");
             this.login(process.env.CLIENT_TOKEN).then(() => {
-                console.log(`${this.user.username} is now online.`); // Green
+                console.log(`${this.user.username} is now online.`);
                 console.log("App Console:\n")
                 this.listen();
             }).catch((e) => {
-                console.log("> There was an error logging into the Discord client."); // Red
+                console.log("> There was an error logging into the Discord client.");
                 throw new Error(e);
             });
         });
@@ -49,8 +53,8 @@ export default class ExtendedClient extends Client<true> {
     private async listen() {
         this.on(Events.InteractionCreate, async (interaction) => {
             if (!interaction.isChatInputCommand()) return
-            else if (this.cooldown.get(interaction.user.id)) {
-                let Time = this.cooldown.get(interaction.user.id)!.getTime() + 20000;
+            else if (this.cooldown.get(interaction.user.id)) { // Checking if the user is on a cooldown
+                let Time = this.cooldown.get(interaction.user.id)!.getTime() + this.cooldownLength;
                 let date = new Date(Time);
 
                 interaction.reply({ embeds: [
@@ -64,7 +68,7 @@ export default class ExtendedClient extends Client<true> {
             this.cooldown.set(interaction.user.id, new Date())
             setTimeout(() => {
                 this.cooldown.delete(interaction.user.id)
-            }, 20000) // 20 seconds
+            }, this.cooldownLength) // Cooldown length
 
             const command = this.commands.get(interaction.commandName);
 
@@ -74,8 +78,10 @@ export default class ExtendedClient extends Client<true> {
                 return
             }
 
-            try { // Checking if the user has requested for the command to silent, and doing so if it is a forced
-                  // ephemeral command or the user has requested it to be
+            try {
+                // Checking if the user has requested for the command to silent, and doing so if it is a forced
+                // ephemeral command or the user has requested it to be
+                
                 const reply = command.execute(this, interaction);
                 const ephemeral = interaction.options.getBoolean("silent")
 
@@ -95,7 +101,7 @@ export default class ExtendedClient extends Client<true> {
     }
 
     private async register({guildId, clientId, clientToken}: RegisterCommands) {
-        console.log("Registering Commands..."); // Blue
+        console.log("Registering Commands...");
 
         // Find commands
         const commandPath = path.join(__dirname, "commands");
@@ -105,12 +111,13 @@ export default class ExtendedClient extends Client<true> {
         const commands = fs.readdirSync(`${commandPath}`).filter(file => file.endsWith('.ts') || file.endsWith('.js'));
         totalCommands += commands.length;
 
+        // Adding commands to a Map array
         for (const file of commands) {
             const command: Command = await import(`${commandPath}/${file}`);
             this.commands.set(command.data.name, command);
         }
         
-        // Automatically adding "silent" option to each command
+        // Automatically adding "silent" option to each command, unless overriden by "ephemeral" field
         this.commands.forEach((command) => {
             if (!command.ephemeral) {
                 command.data.addBooleanOption((option => 
@@ -119,7 +126,7 @@ export default class ExtendedClient extends Client<true> {
                 ))
             }
 
-            commandDatas.push(command.data.toJSON());
+            commandDatas.push(command.data.toJSON()); // adding the individual Command data to an array
         })
 
         // Register the commands to the Discord API
@@ -127,17 +134,20 @@ export default class ExtendedClient extends Client<true> {
         
         const rest = new REST().setToken(clientToken);
 
-        await rest.put(
+        await rest.put( // Actually uploading the interaction commands to Discord's API
             Routes.applicationGuildCommands(clientId, guildId),
             { body: commandDatas }
         ).catch(e => {
-            console.log("> There was an error registering the commands."); // Red
+            console.log("> There was an error registering the commands.");
             console.log("\x1b[0m");
 
             console.error(e);
             throw new Error(e);
         })
 
-        console.log(`> Successfully reloaded application (/) commands.`); // Green
+        console.log(`> Successfully reloaded application (/) commands.`);
     }
 }
+
+// * Written and maintained by Crany:
+//   Read and use my code and your own will.
